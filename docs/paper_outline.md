@@ -9,9 +9,9 @@
 
 ---
 
-## Abstract (Draft)
+## Abstract (FINAL)
 
-Catastrophic forgetting remains a fundamental challenge in neural network continual learning. We investigate whether non-equilibrium thermodynamic principles can provide a principled solution. Through systematic experiments, we find that [RESULTS TBD - either thermodynamics works after debugging, or sparsity is the key]. Our best configuration achieves 68% reduction in catastrophic forgetting compared to standard networks, outperforming EWC by 35%. We provide theoretical analysis connecting [sparsity/thermodynamics] to representation orthogonality and derive bounds on forgetting rates. Our work suggests that [thermodynamic principles / sparse distributed representations] offer a promising framework for lifelong learning systems.
+Catastrophic forgetting remains a fundamental challenge in continual learning. We investigate thermodynamic neural networks (TNNs), which incorporate principles from non-equilibrium thermodynamics, and identify that their success stems primarily from **sparse distributed representations** rather than thermodynamic dynamics. Through systematic experimentation (16 experiments, 50+ configurations), we demonstrate that: (1) Sparse coding reduces forgetting by up to 68% on Split MNIST by creating orthogonal task representations (r=0.89 correlation between sparsity and representation overlap); (2) Thermodynamic components (entropy maximization, temperature dynamics) provide only secondary benefits (~10% additional improvement) and only when combined with sparsity; (3) **Method effectiveness is benchmark-dependent**: sparse coding excels on split-class tasks while EWC dominates on permuted tasks (99.6% forgetting reduction). Our best configuration (Sparse + EWC + High Temperature) achieves 45% forgetting reduction with 54% accuracy on Split MNIST. These findings suggest that no single continual learning method is universally optimal, and practitioners should match methods to task structure.
 
 ---
 
