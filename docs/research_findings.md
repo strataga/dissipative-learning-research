@@ -221,10 +221,30 @@ Consider pivoting from "thermodynamic neural networks" to **"sparse coding for c
 
 ### Recommendations
 
-1. Use 1-5% sparsity for continual learning
-2. Combine with EWC (λ=2000) for best results
-3. Consider task complexity when setting sparsity
-4. The "thermodynamic" framing adds complexity without benefit
+1. **For Split tasks** (different classes): Use sparse coding (1-5%)
+2. **For Permuted tasks** (same classes): Use EWC alone
+3. Combine methods (Sparse + EWC + High T) for robust performance
+4. Consider task structure when selecting methods
+
+---
+
+## Phase 3: Extended Validation
+
+### 9. Permuted MNIST Benchmark (EXP-015)
+
+**Critical Finding**: Method effectiveness depends on task structure!
+
+| Method | Permuted MNIST | Split MNIST |
+|--------|----------------|-------------|
+| EWC only | **Best** (0.35% forg) | Mediocre (95% forg) |
+| Sparse 5% | **Worst** (16% forg) | Good (68% forg) |
+| Sparse + EWC | Middle (11% forg) | Best (32% forg) |
+
+**Why the difference?**
+- **Split MNIST**: Tasks have different digit classes → Sparsity creates orthogonal representations
+- **Permuted MNIST**: Same digits, different pixel order → Tasks overlap in feature space; EWC protects weights better
+
+**Implication**: No single method dominates. Must match method to task structure.
 
 ---
 
