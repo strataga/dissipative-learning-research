@@ -1,3 +1,5 @@
+#### Note: This was an experiment with Claude Opus 4.5 to see if it do proper research.
+
 # Sparse Distributed Representations for Continual Learning
 
 **A Benchmark-Dependent Analysis of Catastrophic Forgetting**
