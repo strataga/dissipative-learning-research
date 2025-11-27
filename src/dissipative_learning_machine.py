@@ -275,6 +275,9 @@ class DissipativeLearningMachine(nn.Module):
         self.state.dissipation = total_dissipation
         self.state.energy += self.energy_injection_rate * dt - total_dissipation
         
+        # BUGFIX: Compute entropy production (was missing before!)
+        self.compute_total_entropy_production()
+        
         # Record history
         self.entropy_history.append(self.state.entropy_production)
         self.energy_history.append(self.state.energy)
