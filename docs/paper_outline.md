@@ -15,42 +15,65 @@ Catastrophic forgetting remains a fundamental challenge in continual learning. W
 
 ---
 
-## 1. Introduction
+## 1. Introduction (DRAFT)
 
-### 1.1 Problem Statement
-- Catastrophic forgetting in neural networks
-- Biological systems don't have this problem
-- Current solutions (EWC, SI, etc.) are heuristic
+Artificial neural networks suffer from *catastrophic forgetting*: when trained sequentially on multiple tasks, they rapidly lose performance on previously learned tasks (McCloskey & Cohen, 1989; French, 1999). This contrasts sharply with biological neural systems, which can learn continuously throughout their lifetime while retaining prior knowledge. Understanding and mitigating catastrophic forgetting is essential for developing AI systems capable of lifelong learning.
 
-### 1.2 Our Approach
-- Non-equilibrium thermodynamics perspective
-- Key insight: Learning as a far-from-equilibrium process
-- Main contributions (list 3-4)
+**The problem.** Standard gradient-based training overwrites weights important for previous tasks. When a network learns Task B after Task A, the weight updates for Task B interfere destructively with the representations learned for Task A. This interference can cause near-complete forgetting: in our experiments, standard networks show 99.7% forgetting on Split MNIST after just 5 sequential tasks.
 
-### 1.3 Key Findings (Preview)
-- [Thermodynamic result OR sparse coding result]
-- Quantitative improvement over baselines
-- Theoretical understanding
+**Existing approaches.** Prior work has proposed various solutions: Elastic Weight Consolidation (EWC) protects important weights using Fisher information (Kirkpatrick et al., 2017); Synaptic Intelligence (SI) tracks weight importance online (Zenke et al., 2017); Progressive Networks add new capacity for each task (Rusu et al., 2016). While effective, these methods are largely heuristic—they lack a principled understanding of *why* they work and *when* they will fail.
+
+**Our investigation.** We investigate Thermodynamic Neural Networks (TNNs), which incorporate principles from non-equilibrium thermodynamics: energy functions, entropy production, and temperature-controlled dynamics. TNNs have shown promise for continual learning, but the source of their success has been unclear. Is it the thermodynamic dynamics, or something else?
+
+**Key finding: Sparsity, not thermodynamics.** Through systematic ablation (16 experiments, 50+ configurations), we identify that TNN success stems primarily from **sparse distributed representations**, not thermodynamic dynamics. Sparse k-Winner-Take-All activations create orthogonal task representations, directly reducing interference. We find a strong correlation (r=0.89, p=0.017) between sparsity level and representation overlap—lower sparsity means less overlap and less forgetting.
+
+**Contributions.** This paper makes three contributions:
+
+1. **Mechanistic understanding.** We demonstrate that sparse coding is the primary mechanism reducing catastrophic forgetting in TNNs, with thermodynamic components providing only secondary benefits (~10% additional improvement, and only when combined with sparsity).
+
+2. **Benchmark dependency.** We show that method effectiveness depends critically on task structure: sparse coding excels on split-class benchmarks (68% forgetting reduction on Split MNIST), while EWC dominates on permuted benchmarks (99.6% reduction on Permuted MNIST). No single method is universally optimal.
+
+3. **Practical recommendations.** Based on our findings, we provide guidelines for practitioners: analyze task structure before selecting methods. For tasks with distinct class distributions, use sparse representations; for tasks sharing class structure, use weight protection methods like EWC.
+
+**Implications.** Our results suggest the field should move beyond proposing new continual learning methods toward understanding *why* existing methods work and *when* they apply. The benchmark-dependency finding is particularly important: reported improvements may not generalize across task types, raising concerns about reproducibility and fair comparison in the literature.
 
 ---
 
-## 2. Background
+## 2. Related Work (DRAFT)
 
 ### 2.1 Catastrophic Forgetting
-- Definition and history
-- Why it happens (loss landscape perspective)
-- Current approaches: EWC, SI, PackNet, etc.
 
-### 2.2 Non-Equilibrium Thermodynamics
-- Equilibrium vs non-equilibrium systems
-- Prigogine's dissipative structures
-- Entropy production, energy flow
-- Relevance to biological neural systems
+Catastrophic forgetting was first identified by McCloskey & Cohen (1989) and has since become a central challenge in continual learning. French (1999) provided a comprehensive review of early approaches. The problem arises because standard neural networks use distributed, overlapping representations—when weights are updated for a new task, they inevitably interfere with representations for previous tasks.
 
-### 2.3 Sparse Coding in Neuroscience
-- Sparse distributed representations
-- k-Winner-Take-All
-- Relationship to memory capacity
+**Regularization-based methods** add penalties to prevent important weights from changing. Elastic Weight Consolidation (EWC; Kirkpatrick et al., 2017) uses Fisher information to identify important weights and penalizes changes to them. Synaptic Intelligence (SI; Zenke et al., 2017) tracks weight importance online during training. Memory Aware Synapses (MAS; Aljundi et al., 2018) uses gradient magnitude as an importance measure. Our work shows that EWC is particularly effective for permuted-task benchmarks but less so for split-class tasks.
+
+**Replay-based methods** store or generate examples from previous tasks. Experience Replay (Rolnick et al., 2019) maintains a buffer of past examples. Generative Replay (Shin et al., 2017) trains a generative model to produce pseudo-examples. These methods are orthogonal to our approach and could potentially be combined with sparse representations.
+
+**Architecture-based methods** allocate different network components to different tasks. Progressive Networks (Rusu et al., 2016) add new columns for each task. PackNet (Mallya & Lazebnik, 2018) prunes and freezes weights after each task. These methods guarantee no forgetting but increase model size with each task.
+
+### 2.2 Sparse Representations in Neural Networks
+
+Sparse coding has a long history in computational neuroscience (Olshausen & Field, 1996). Sparse distributed representations offer several advantages: increased capacity, reduced interference, and better generalization.
+
+**k-Winner-Take-All (k-WTA)** activations enforce sparsity by keeping only the top-k activations in each layer (Ahmad & Hawkins, 2016). This creates binary-like activation patterns that can be analyzed using set operations. Our work demonstrates that k-WTA is the key component enabling continual learning in TNNs.
+
+**Hierarchical Temporal Memory (HTM)** uses sparse distributed representations for sequence learning (Hawkins et al., 2016). The sparse representations in HTM are hypothesized to enable continual learning, which our experiments support.
+
+### 2.3 Thermodynamics and Machine Learning
+
+The connection between thermodynamics and neural networks dates to Hopfield networks (Hopfield, 1982) and Boltzmann machines (Hinton & Sejnowski, 1986), which use energy functions and temperature-controlled sampling.
+
+**Non-equilibrium thermodynamics** extends these ideas to systems far from equilibrium. Prigogine's dissipative structures (Prigogine, 1977) show how order can emerge in systems with entropy production. Recent work has applied these principles to neural networks (Still et al., 2012), but the benefits for continual learning have been unclear.
+
+**Free Energy Principle** (Friston, 2010) provides a theoretical framework connecting perception, action, and learning through free energy minimization. While theoretically elegant, its computational implementation remains challenging.
+
+Our work contributes to this literature by showing that thermodynamic dynamics provide only secondary benefits for continual learning—the primary mechanism is sparse coding, which can be understood without thermodynamic formalism.
+
+### 2.4 Benchmark Considerations
+
+Continual learning benchmarks vary significantly in structure. **Split benchmarks** (Split MNIST, Split CIFAR) divide classes across tasks—each task has different output classes. **Permuted benchmarks** (Permuted MNIST) apply different input transformations to the same classes—all tasks share the same output classes.
+
+Our finding that method effectiveness depends on benchmark type has important implications. Previous comparisons may not generalize: a method that excels on Split MNIST may perform poorly on Permuted MNIST, and vice versa. This calls for more careful benchmark selection and reporting in the continual learning literature.
 
 ---
 
