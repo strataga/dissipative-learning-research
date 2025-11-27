@@ -54,41 +54,143 @@ Catastrophic forgetting remains a fundamental challenge in continual learning. W
 
 ---
 
-## 3. Method
+## 3. Method (DETAILED DRAFT)
 
 ### 3.1 Thermodynamic Neural Network (TNN)
 
 #### 3.1.1 Architecture
+
+We implement a multi-layer perceptron with k-Winner-Take-All (k-WTA) sparse activations:
+
 ```
-- Layer structure
-- k-WTA activation
-- Thermodynamic state tracking
+Input: x ∈ ℝ^d
+Hidden layers: h_l = k-WTA(W_l h_{l-1} + b_l), l = 1,...,L-1
+Output: y = softmax(W_L h_{L-1} + b_L)
+
+k-WTA(z): Keep top k% activations, zero others
+         k-WTA(z)_i = z_i if z_i ∈ top-k(z), else 0
 ```
 
-#### 3.1.2 Thermodynamic Dynamics
-```
-dθ/dt = -∇L(θ) + η(T) + J(θ)
-- Gradient descent term
-- Thermal noise term
-- Information current term
+**Implementation details:**
+- Layer sizes: [784, 256, 10] for MNIST, [3072, 256, 10] for CIFAR-10
+- Sparsity levels tested: 1%, 5%, 10%, 15%, 25%, 50%, 100%
+- Best performing: 5% sparsity (12.8 active neurons per layer)
+
+#### 3.1.2 Thermodynamic State
+
+Each layer maintains thermodynamic state variables:
+
+```python
+class ThermodynamicState:
+    energy: float          # E = 0.5 * ||W||²
+    entropy_production: float  # σ = J · F / T
+    temperature: float     # T (controls noise injection)
 ```
 
-#### 3.1.3 Energy and Entropy
+**Energy function:**
 ```
-- Energy function: E(θ) = ...
-- Entropy production: σ = ΣJᵢXᵢ
-- Dissipation: γ||θ̇||²
+E(θ) = (1/2) Σ_l ||W_l||²_F + λ_sparse * Σ_l H(a_l)
+```
+where H(a) is the entropy of activation patterns.
+
+**Entropy production:**
+```
+σ = J · F / T
+where:
+  J = information current (gradient flow magnitude)
+  F = thermodynamic force (loss gradient)
+  T = temperature parameter
 ```
 
-### 3.2 Training Procedure
-- Standard forward/backward pass
-- Thermodynamic dynamics step
-- Consolidation mechanism
-- Sleep/wake cycles (if validated)
+Typical values: σ ≈ 0.00001 - 0.0003 (very small but non-zero)
 
-### 3.3 Sparse + EWC Combination
-- How we combine sparse coding with EWC
-- Why they're complementary
+#### 3.1.3 Training Dynamics
+
+Each training step includes:
+
+1. **Forward pass**: Compute k-WTA activations and output
+2. **Loss computation**: L = CrossEntropy + α·σ (optional entropy term)
+3. **Backward pass**: Standard backpropagation
+4. **Consolidation update**: Track important weights
+5. **Homeostasis**: Adjust activation thresholds
+6. **Noise injection**: Add Gaussian noise scaled by temperature
+
+```python
+# Pseudocode for training step
+output = model.forward(x)  # k-WTA activations
+loss = cross_entropy(output, y) - alpha * entropy_production
+loss.backward()
+optimizer.step()
+model.update_consolidation()  # Track weight importance
+model.inject_noise(scale=0.001 * temperature)
+```
+
+### 3.2 Elastic Weight Consolidation (EWC)
+
+We use online EWC with Fisher information accumulation:
+
+```
+L_EWC = L_task + (λ/2) Σ_i F_i (θ_i - θ*_i)²
+```
+
+**Implementation:**
+- Fisher samples: 200 per task
+- λ values tested: 100, 500, 1000, 2000, 5000, 10000
+- Best performing: λ = 2000
+- Fisher accumulation: Running average across tasks
+
+### 3.3 Combined Method: Sparse + EWC
+
+Our best configuration combines sparse coding with EWC:
+
+```
+Architecture: TNN with 5% sparsity
+Regularization: EWC with λ = 2000
+Temperature: T = 1.0 (standard) or T = 2.0 (high)
+```
+
+**Why they're complementary:**
+1. **Sparsity** creates orthogonal representations → reduces interference
+2. **EWC** protects important weights → preserves learned features
+3. **Combined** addresses both representation and weight levels
+
+### 3.4 Experimental Setup
+
+#### Datasets
+
+| Dataset | Tasks | Classes/Task | Train/Test |
+|---------|-------|--------------|------------|
+| Split MNIST | 5 | 2 | 12k/2k per task |
+| Permuted MNIST | 5 | 10 | 60k/10k per task |
+| Split CIFAR-10 | 5 | 2 | 2k/0.5k per task |
+
+#### Hyperparameters
+
+| Parameter | Value | Range Tested |
+|-----------|-------|--------------|
+| Learning rate | 0.001 | 0.0001-0.01 |
+| Batch size | 64 | 32-128 |
+| Epochs/task | 3 | 1-10 |
+| Sparsity | 5% | 1-100% |
+| EWC λ | 2000 | 100-10000 |
+| Temperature | 1.0 | 0.01-10.0 |
+
+#### Metrics
+
+1. **Average Forgetting**: Mean accuracy drop on previous tasks
+   ```
+   Forgetting = (1/(T-1)) Σ_{t<T} [max_{t'≤t}(A_{t,t'}) - A_{t,T}]
+   ```
+
+2. **Average Accuracy**: Mean final accuracy across all tasks
+   ```
+   Accuracy = (1/T) Σ_t A_{t,T}
+   ```
+
+3. **Representation Overlap**: Jaccard similarity of active neurons
+   ```
+   Overlap(t1, t2) = |Active(t1) ∩ Active(t2)| / |Active(t1) ∪ Active(t2)|
+   ```
 
 ---
 
