@@ -217,22 +217,94 @@ Temperature: T = 1.0 (standard) or T = 2.0 (high)
 
 ---
 
-## 4. Theoretical Analysis
+## 4. Theoretical Analysis (DRAFT)
 
-### 4.1 Representation Orthogonality
-- Definition of task overlap
-- Theorem: Overlap bounds forgetting
-- Proof sketch
+### 4.1 Representation Orthogonality and Forgetting
 
-### 4.2 Sparsity and Capacity
-- How sparsity affects representational capacity
-- Optimal sparsity derivation
-- Trade-off analysis
+We formalize the relationship between representation overlap and catastrophic forgetting.
 
-### 4.3 Thermodynamic Interpretation
-- [If thermodynamics works] Connection to entropy production
-- [If not] Why thermodynamics alone is insufficient
-- Relationship to free energy principle
+**Definition 1 (Task Representation).** For task t, let A_t ⊆ {1,...,n} be the set of neurons active for inputs from task t:
+```
+A_t = {i : E[h_i(x)] > 0 for x ~ D_t}
+```
+
+**Definition 2 (Representation Overlap).** The overlap between tasks t₁ and t₂ is the Jaccard similarity:
+```
+Overlap(t₁, t₂) = |A_{t₁} ∩ A_{t₂}| / |A_{t₁} ∪ A_{t₂}|
+```
+
+**Proposition 1 (Overlap Bounds Forgetting).** Under gradient descent with learning rate η, the expected forgetting on task t₁ after training on task t₂ is bounded by:
+```
+E[Forgetting(t₁)] ≤ O(η · Overlap(t₁, t₂) · ||∇L_{t₂}||)
+```
+
+*Intuition:* When representations don't overlap (Overlap = 0), gradient updates for t₂ affect different neurons than those used for t₁, causing zero interference. As overlap increases, more shared neurons are modified, increasing forgetting.
+
+**Empirical Validation:** We observe r = 0.89 correlation between overlap and forgetting across sparsity levels (p = 0.017), strongly supporting this theoretical relationship.
+
+### 4.2 Sparsity and Representational Capacity
+
+**Proposition 2 (Sparsity Reduces Overlap).** For k-WTA with sparsity level s = k/n, the expected overlap between random task representations is:
+```
+E[Overlap] ≈ s / (2 - s)
+```
+
+For s = 0.05 (5% sparsity): E[Overlap] ≈ 0.026
+For s = 0.50 (50% sparsity): E[Overlap] ≈ 0.33
+For s = 1.00 (dense): E[Overlap] ≈ 1.00
+
+*Derivation:* With k active neurons out of n, and assuming independent selection for different tasks:
+- Expected intersection: k²/n
+- Expected union: 2k - k²/n
+- Ratio approaches s/(2-s) for large n
+
+**Proposition 3 (Capacity Trade-off).** The number of distinguishable representations with k active neurons is:
+```
+C(n,k) = n! / (k!(n-k)!)
+```
+
+For n=256, k=13 (5% sparsity): C ≈ 10²⁰ representations
+For n=256, k=128 (50% sparsity): C ≈ 10⁷⁶ representations
+
+*Implication:* Even with 5% sparsity, capacity vastly exceeds typical task requirements. The capacity cost of sparsity is negligible compared to the forgetting benefit.
+
+### 4.3 Why Thermodynamics Alone Is Insufficient
+
+Our experiments show thermodynamic components (entropy maximization, temperature) provide no benefit without sparsity. We explain this theoretically.
+
+**Observation:** Entropy production σ ≈ 0.0001 is orders of magnitude smaller than loss gradients ||∇L|| ≈ 0.1. Thus:
+```
+L_total = L_task - α·σ ≈ L_task  (for reasonable α)
+```
+
+The entropy term is too small to meaningfully influence optimization.
+
+**Why sparsity enables thermodynamic benefits:** When combined with sparse representations:
+1. Sparsity creates distinct subspaces for each task
+2. Within each subspace, thermodynamic noise helps exploration
+3. High temperature increases plasticity within orthogonal regions
+
+This explains our finding: Sparse + High T shows 12% improvement over Sparse alone, but High T without sparsity shows no improvement.
+
+### 4.4 Benchmark Dependency: A Theoretical Perspective
+
+**Split benchmarks** (different classes per task):
+- Tasks have inherently different optimal representations
+- Sparsity naturally separates these representations
+- EWC protects weights that may not be task-specific
+
+**Permuted benchmarks** (same classes, different inputs):
+- Tasks share optimal output representations (same classes)
+- Input permutation creates different input-to-hidden mappings
+- EWC correctly identifies shared output weights as important
+- Sparsity may fragment beneficial shared representations
+
+**Prediction:** Methods should be matched to task structure:
+- Split tasks → Sparse representations
+- Permuted tasks → Weight protection (EWC)
+- Mixed tasks → Combination (Sparse + EWC)
+
+Our experiments confirm this prediction exactly.
 
 ---
 
