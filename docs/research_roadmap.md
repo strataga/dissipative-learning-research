@@ -166,9 +166,12 @@
 |-----------|--------|--------|
 | Synthetic data PoC | ✓ Working | ✅ Done |
 | MNIST ≥95% accuracy | Match standard | ✅ Done (97%+) |
-| Forgetting <50% of standard | Measured | ⚠️ Partial (1.4x better at T=1, but tradeoff) |
+| Forgetting <50% of standard | Measured | ✅ Done (Sparse+EWC: 68% reduction) |
 | Pink noise signature | Slope < -0.5 | ✅ Done (-1.1 to -1.8) |
 | Temperature sweep | Document regimes | ✅ Done (phase transition at T≈0.3) |
+| Ultra-low sparsity | Test 1-3% | ✅ Done (1% optimal: 0.39 forgetting) |
+| Sparse+EWC combo | Combine methods | ✅ Done (43% improvement, 0.32 forgetting) |
+| CIFAR-10 | Scale up | ⚠️ Partial (benefit less dramatic) |
 | First paper submission | Q1 2025 | Pending |
 | Neuromorphic prototype | Q3 2025 | Pending |
 
