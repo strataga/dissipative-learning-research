@@ -654,11 +654,13 @@ def main():
     
     # Save visualization
     import os
-    os.makedirs('/Users/jason/projects/wellos2/experiments', exist_ok=True)
-    visualize_results(results, save_path='/Users/jason/projects/wellos2/experiments/dlm_results.png')
+    results_dir = 'results'
+    os.makedirs(results_dir, exist_ok=True)
+    save_path = os.path.join(results_dir, 'dlm_results.png')
+    visualize_results(results, save_path=save_path)
     
     print()
-    print("Visualization saved to experiments/dlm_results.png")
+    print(f"Visualization saved to {save_path}")
 
 
 if __name__ == "__main__":
